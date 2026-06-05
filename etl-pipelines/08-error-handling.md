@@ -144,6 +144,37 @@ except requests.RequestException as exc:
     return
 ```
 
+## One Job per Try/Except Block
+
+Keep each `try/except` focused on a single operation. When one block contains multiple jobs, a failure message often lacks enough context to identify which step actually failed.
+
+❌ Bad:
+```python
+try:
+    raw_data = extract(entity)
+    transformed = transform(raw_data)
+    load(transformed)
+except Exception as exc:
+    logger.error(f"Entity '{entity.id}' failed: {exc}")
+```
+
+✅ Good:
+```python
+try:
+    raw_data = extract(entity)
+except Exception as exc:
+    return [f"Entity '{entity.id}': extract failed: {exc}"]
+
+try:
+    transformed = transform(raw_data)
+except Exception as exc:
+    return [f"Entity '{entity.id}': transform failed: {exc}"]
+
+return load_with_error_collection(entity, transformed)
+```
+
+This improves observability, makes retries safer, and keeps error ownership clear per pipeline stage.
+
 ## Sensitive Data in Error Messages
 
 Don't include credentials, tokens, or PII in error messages:
