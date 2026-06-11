@@ -177,8 +177,14 @@ Export an exact lockfile for operational/production runs: `mamba env export --no
 
 ## Anti-Patterns
 
-Committing notebook outputs or `data/` · scattered imports · cells >50 lines doing many things ·
-`.compute()` on full arrays · float64 by default for large rasters · string paths (use pathlib) ·
-recomputing expensive steps instead of checkpointing · shared kernel state between notebooks ·
-exact version pins in `environment.yml` · copy-pasting the same function across notebooks (extract to `src/`) ·
-hand-writing what `pandas`/`xarray`/`geopandas`/`scikit-learn` already do.
+- Committing notebook outputs or `data/`
+- Scattered imports
+- Cells >50 lines doing many things
+- `.compute()` on full arrays
+- float64 by default for large rasters
+- String paths (use pathlib)
+- Recomputing expensive steps instead of checkpointing
+- Shared kernel state between notebooks
+- Exact version pins in `environment.yml`
+- Copy-pasting the same function across notebooks (extract to `src/`)
+- Hand-writing what `pandas`/`xarray`/`geopandas`/`scikit-learn` already do

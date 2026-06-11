@@ -194,7 +194,14 @@ select = ["E","W","F","I","UP","B","SIM","T20","N","RET","PTH"]
 
 ## Anti-Patterns
 
-`CSRFProtect(app)` at module level · business logic in routes · `flask` imports in services ·
-`os.getenv` deep in code · rendering instead of redirecting after POST · `| safe` on user input ·
-exposing internal errors · `print()` (use logging) · logging secrets · `app.run()` in production ·
-custom session/CSRF/auth handling where `Flask-WTF`/`WTForms`/`Flask-Login` already solve it.
+- `CSRFProtect(app)` at module level
+- Business logic in routes
+- `flask` imports in services
+- `os.getenv` deep in code
+- Rendering instead of redirecting after POST
+- `| safe` on user input
+- Exposing internal errors
+- `print()` (use logging)
+- Logging secrets
+- `app.run()` in production
+- Custom session/CSRF/auth handling where `Flask-WTF`/`WTForms`/`Flask-Login` already solve it

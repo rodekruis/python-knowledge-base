@@ -211,8 +211,15 @@ markers = ["integration: integration tests", "needs_secrets: needs API keys/cred
 
 ## Anti-Patterns
 
-Raw dicts flowing through the pipeline · I/O or env reads inside transforms · loading data via shared global
-state · sending output before integrity checks · `except: pass` · aborting the whole run on one entity's
-failure · secrets/PII in logs or errors · argparse spaghetti (use Click/tyro) · `print()` (use logging) ·
-caching volatile data · custom retry loops or parsers where `tenacity`/`pydantic` and established clients
-already solve it · reinventing `DataProvider`/`DataSubmitter` abstractions instead of reusing them.
+- Raw dicts flowing through the pipeline
+- I/O or env reads inside transforms
+- Loading data via shared global state
+- Sending output before integrity checks
+- `except: pass`
+- Aborting the whole run on one entity's failure
+- Secrets/PII in logs or errors
+- Argparse spaghetti (use Click/tyro)
+- `print()` (use logging)
+- Caching volatile data
+- Custom retry loops or parsers where `tenacity`/`pydantic` and established clients already solve it
+- Reinventing `DataProvider`/`DataSubmitter` abstractions instead of reusing them

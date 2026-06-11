@@ -202,7 +202,14 @@ Direct deps may stay unpinned (lockfile is source of truth); **always commit `uv
 
 ## Anti-Patterns
 
-Module-level `app = FastAPI()` for non-trivial apps · scattered `os.environ` · raw `dict` request/response ·
-fat handlers with business logic · `test_mode` flags · `print()` (use logging) · bare `except` · logging
-secrets · running uvicorn directly in prod · copying `.env`/`tests/` into images · hand-rolled
-auth/validation/retry logic where `fastapi`/`pydantic`/`httpx`/`tenacity` already solve it.
+- Module-level `app = FastAPI()` for non-trivial apps
+- Scattered `os.environ`
+- Raw `dict` request/response
+- Fat handlers with business logic
+- `test_mode` flags
+- `print()` (use logging)
+- Bare `except`
+- Logging secrets
+- Running uvicorn directly in prod
+- Copying `.env`/`tests/` into images
+- Hand-rolled auth/validation/retry logic where `fastapi`/`pydantic`/`httpx`/`tenacity` already solve it
