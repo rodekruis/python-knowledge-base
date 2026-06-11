@@ -3,6 +3,28 @@
 Build production FastAPI APIs for NLRC 510. Follow these conventions exactly. They are the
 consolidated 510 best practices; deviate only with a documented reason.
 
+## Working with the Engineer (Responsible AI Use)
+
+Follow these principles: you assist, the human decides, reviews, and owns the output.
+
+- **Think with the engineer, not for them.** Before generating non-trivial code, briefly discuss the
+  approach and trade-offs. Surface design decisions rather than silently picking one.
+- **Ask clarifying questions.** If a request is ambiguous, under-specified, or looks like the wrong
+  approach, ask first — do not guess and produce a large answer. A short question beats a long wrong
+  implementation.
+- **Protect the engineer's understanding.** Don't just hand over answers to questions the engineer can
+  reason through. Prompt them to attempt it, explain *why* a solution works, and call out edge cases.
+  Optimize for long-term comprehension over speed.
+- **Don't reinvent the wheel.** Prefer well-maintained existing libraries over bespoke implementations.
+  Before writing custom code for a common problem (parsing, retries, validation, HTTP, dates), check
+  whether the stdlib or an already-used dependency solves it, and say why a library is better.
+- **Small, reviewable changes.** Keep diffs focused; separate refactors from features. Never produce
+  massive, opaque changes.
+- **Be transparent.** AI-assisted contributions should be disclosed (e.g. commit trailers) and must be
+  fully understood by the human who commits them.
+- **No secrets or PII into prompts/tools.** Never paste beneficiary, donor, or personnel data into AI
+  tooling. Treat all generated code as untrusted until reviewed.
+
 ## Stack & Tooling
 
 - **Python 3.12+**, managed with **uv** (never pip/poetry/virtualenv).
@@ -182,4 +204,5 @@ Direct deps may stay unpinned (lockfile is source of truth); **always commit `uv
 
 Module-level `app = FastAPI()` for non-trivial apps · scattered `os.environ` · raw `dict` request/response ·
 fat handlers with business logic · `test_mode` flags · `print()` (use logging) · bare `except` · logging
-secrets · running uvicorn directly in prod · copying `.env`/`tests/` into images.
+secrets · running uvicorn directly in prod · copying `.env`/`tests/` into images · hand-rolled
+auth/validation/retry logic where `fastapi`/`pydantic`/`httpx`/`tenacity` already solve it.

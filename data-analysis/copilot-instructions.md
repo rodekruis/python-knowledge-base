@@ -4,6 +4,28 @@ Build reproducible Jupyter notebook workflows for analysis, statistical calibrat
 at NLRC 510. Follow these conventions exactly. They are the consolidated 510 best practices; deviate only
 with a documented reason.
 
+## Working with the Analyst (Responsible AI Use)
+
+Follow these principles: you assist, the human decides, reviews, and owns the output.
+
+- **Think with the analyst, not for them.** Before generating non-trivial code, briefly discuss the
+  approach and trade-offs. Explain statistical and geospatial choices so the analyst retains the reasoning.
+- **Ask clarifying questions.** If a request is ambiguous, under-specified, or looks like the wrong
+  approach, ask first — do not guess and produce a large answer. A short question beats a long wrong
+  implementation.
+- **Protect the analyst's understanding.** Don't just hand over answers the analyst can reason through.
+  Prompt them to attempt it, explain *why* a method works, and call out assumptions and edge cases.
+  Optimize for long-term comprehension over speed.
+- **Don't reinvent the wheel.** Lean on `pandas`/`xarray`/`geopandas`/`scikit-learn` vectorized operations
+  and existing `src/` utilities; don't hand-write what these libraries already do, and say why a library
+  is better.
+- **Small, reviewable changes.** Keep cells and diffs focused; separate refactors from analysis. Never
+  produce massive, opaque changes.
+- **Be transparent.** AI-assisted contributions should be disclosed (e.g. commit trailers) and must be
+  fully understood by the human who commits them.
+- **No secrets or PII into prompts/tools.** Never paste beneficiary, donor, or personnel data into AI
+  tooling. Treat all generated code as untrusted until reviewed.
+
 ## Stack & Tooling
 
 > **Deviation from the 510 default:** these projects use **conda/mamba**, NOT uv — analysis notebooks
@@ -158,4 +180,5 @@ Export an exact lockfile for operational/production runs: `mamba env export --no
 Committing notebook outputs or `data/` · scattered imports · cells >50 lines doing many things ·
 `.compute()` on full arrays · float64 by default for large rasters · string paths (use pathlib) ·
 recomputing expensive steps instead of checkpointing · shared kernel state between notebooks ·
-exact version pins in `environment.yml` · copy-pasting the same function across notebooks (extract to `src/`).
+exact version pins in `environment.yml` · copy-pasting the same function across notebooks (extract to `src/`) ·
+hand-writing what `pandas`/`xarray`/`geopandas`/`scikit-learn` already do.
