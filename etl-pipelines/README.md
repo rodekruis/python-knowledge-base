@@ -31,3 +31,20 @@ It is target-agnostic: whether you push results to an alerting platform, a dashb
 | [11-logging-observability.md](11-logging-observability.md) | loguru vs stdlib, run traceability, alerting (→ [shared/logging](../shared/logging.md)) |
 | [12-deployment-and-scheduling.md](12-deployment-and-scheduling.md) | Docker, cron, GitHub Actions, Azure Functions, CI/CD (→ [shared/docker](../shared/docker.md)) |
 | [13-dependencies-and-code-quality.md](13-dependencies-and-code-quality.md) | deptry, vulture, pyright, quality runner (→ [shared/dependencies](../shared/dependencies.md), [shared/code-quality](../shared/code-quality.md)) |
+
+## Glossary
+
+ETL and software terms used across this guide:
+
+| Term | Definition |
+|------|------------|
+| **ETL** | ETL means Extract, Transform, Load: pull data from sources, process it, then publish it to a target system. In this guide, this is the core workflow for scheduled data pipelines. |
+| **Orchestration** | Orchestration is the control layer that decides what runs, in what order, and with which configuration. It wires extract, transform, and load steps together and handles run-level errors and reporting. |
+| **Protocol** | A Protocol in Python defines a behavior contract (what methods or attributes an object must have) without forcing class inheritance. It lets you swap components like extractors or loaders as long as they follow the same interface. |
+| **ABC (Abstract Base Class)** | An Abstract Base Class defines required methods that child classes must implement. In this guide, storage backends use this so local and cloud storage can be used interchangeably. |
+| **Concurrency (Async)** | Concurrency means running multiple tasks during the same time window, often with async I/O for network-heavy work. In ETL, this speeds up downloading or reading from many sources. |
+| **Idempotency** | Idempotency means running the same pipeline multiple times with the same input gives the same result and does not create duplicates. This is critical for retries, backfills, and scheduler reliability. |
+| **Dataclass** | A dataclass is a compact way to define structured, typed Python objects for data. The guide recommends converting raw API dictionaries into dataclasses early for safer, clearer code. |
+| **Enum (StrEnum)** | An enum defines a fixed set of allowed values, such as run targets or output modes. This prevents typo-based bugs and makes config validation and autocomplete better. |
+| **Integrity Checks** | Integrity checks are local validation rules run before writing output, such as coordinate ranges or required fields. They catch bad payloads early and avoid confusing downstream API errors. |
+| **Run Target** | A run target is an environment profile such as debug, test, or prod that controls data sources and output behavior. It allows the same codebase to run safely in different environments by changing configuration, not code. |
