@@ -1,6 +1,6 @@
 # Python Knowledge Base
 
-Best practices, templates, and documentation for Python applications.
+This repository collects all the knowledge, documentation, best practices, tips, templates and manuals developed by 510 for python applications.
 
 ## Contents
 
