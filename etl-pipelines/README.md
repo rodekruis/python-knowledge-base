@@ -12,6 +12,8 @@ This guide covers **scheduled or triggered data pipelines** that:
 
 It is target-agnostic: whether you push results to an alerting platform, a dashboard, a data warehouse, or a file share, the engineering principles are the same.
 
+> **Starting a new project?** Copy [copilot-instructions.md](copilot-instructions.md) into your repo at `.github/copilot-instructions.md`. It consolidates the most important rules from this guide (and the [shared](../shared/) standards) into a single concise file that GitHub Copilot reads automatically.
+
 ## Guide Structure
 
 | File | Topic |

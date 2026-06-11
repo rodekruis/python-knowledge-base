@@ -58,7 +58,7 @@ app = FastAPI(
     title="my-app",
     description="Short description.",
     version="0.1.0",
-    license_info={"name": "AGPL-3.0", "url": "https://www.gnu.org/licenses/agpl-3.0.en.html"},
+    license_info={"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
 )
 
 @app.get("/", include_in_schema=False)
@@ -179,7 +179,7 @@ app = FastAPI(
     title="my-app",
     description="What it does. Built by [NLRC 510](https://www.510.global/).",
     version="0.1.0",
-    license_info={"name": "AGPL-3.0", "url": "https://www.gnu.org/licenses/agpl-3.0.en.html"},
+    license_info={"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
     openapi_tags=[
         {"name": "chat", "description": "Chat endpoints"},
         {"name": "search", "description": "Search endpoints"},

@@ -2,6 +2,8 @@
 
 Best practices for building **reproducible, well-structured data analysis notebooks** in Python. These guidelines target analysis and calibration work in Jupyter — geospatial analysis, statistical calibration, impact assessment — where the deliverable is insight (plots, reports, calibrated parameters), not a deployed service.
 
+> **Starting a new project?** Copy [copilot-instructions.md](copilot-instructions.md) into your repo at `.github/copilot-instructions.md`. It consolidates the most important rules from this guide (and the [shared](../shared/) standards) into a single concise file that GitHub Copilot reads automatically.
+
 ## Guide Structure
 
 | File | Topic |
