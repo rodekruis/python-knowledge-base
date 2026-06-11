@@ -2,7 +2,9 @@
 
 Best practices for building Flask-based applications. Based on industry-standard Flask patterns and our own work.
 
-> **Starting a new project?** Copy [copilot-instructions.md](copilot-instructions.md) into your repo at `.github/copilot-instructions.md`. It consolidates the most important rules from this guide (and the [shared](../shared/) standards) into a single concise file that GitHub Copilot reads automatically.
+## 🚀 Starting a new project
+
+Copy [copilot-instructions.md](copilot-instructions.md) into your repo at `.github/copilot-instructions.md`. It consolidates the most important rules from this guide (and the [shared](../shared/) standards) into a single concise file that GitHub Copilot reads automatically.
 
 ## Guide Structure
 
