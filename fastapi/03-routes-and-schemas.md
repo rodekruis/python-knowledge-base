@@ -115,6 +115,8 @@ async def search(payload: SearchRequest) -> SearchResponse:
 
 The API schema is your contract with external consumers. Domain models are your internal representation. Never expose domain internals directly:
 
+> This split exists because the HTTP layer is just one *adapter* into the application. See [hexagonal architecture](01-project-structure.md#key-principles) for the underlying rationale.
+
 ```python
 # Route handler maps between them
 @router.post("/v1/analyze", response_model=ApiAnalyzeResponse)

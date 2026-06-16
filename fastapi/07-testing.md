@@ -102,6 +102,8 @@ class TestSearch:
 
 For larger apps — create a fresh app per test with injected fakes:
 
+> Injecting fakes through the composition root is possible precisely because services depend on *ports*, not concrete adapters. See [hexagonal architecture](01-project-structure.md#key-principles).
+
 ```python
 # tests/api/conftest.py
 import pytest

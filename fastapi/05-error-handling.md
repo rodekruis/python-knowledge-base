@@ -4,6 +4,8 @@
 
 Define a hierarchy of domain exceptions that are independent of HTTP:
 
+> Keeping errors HTTP-independent (and translating external failures to them in adapters) is a direct consequence of the ports-and-adapters split. See [hexagonal architecture](01-project-structure.md#key-principles).
+
 ```python
 # domain/errors.py
 
