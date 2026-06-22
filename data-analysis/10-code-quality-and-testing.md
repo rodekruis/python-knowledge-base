@@ -90,7 +90,7 @@ nbqa isort notebooks/ --check
 ### ✅ Good: notebooks pass the same lint rules as src/
 
 ```bash
-$ nbqa ruff notebooks/02_HazardOnly_Workflow.ipynb
+$ nbqa ruff notebooks/02_HazardModeling.ipynb
 All checks passed!
 ```
 
@@ -236,7 +236,7 @@ Use `papermill` to run notebooks programmatically in CI. This proves notebooks a
 
 ```bash
 # Run notebook with specific parameters
-papermill notebooks/02_HazardOnly_Workflow.ipynb \
+papermill notebooks/02_HazardModeling.ipynb \
     outputs/02_executed.ipynb \
     -p BASIN_ID "region_01" \
     -p RUN_TAG "ci-test" \
@@ -258,7 +258,7 @@ OUTPUT_DIR = Path("test_outputs")
 @pytest.mark.slow
 @pytest.mark.parametrize("notebook", [
     "01_Calibration.ipynb",
-    "02_HazardOnly_Workflow.ipynb",
+    "02_HazardModeling.ipynb",
 ])
 def test_notebook_runs_without_error(notebook, tmp_path):
     """Smoke test: notebook executes top-to-bottom."""

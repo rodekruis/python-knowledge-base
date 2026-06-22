@@ -49,7 +49,7 @@ nbstripout --install
 
 ```
 my-analysis/
-├── notebooks/           # numbered, sequential: 01_*.ipynb → 02_*.ipynb → 03_*.ipynb
+├── notebooks/           # numbered, sequential: 00_*.ipynb → 01_*.ipynb → 02_*.ipynb → 03_*.ipynb
 ├── src/mypackage/       # importable reusable code, organized by DOMAIN not by notebook
 │   ├── adapters/ domain/ geo/ models/ qc/ utils/ cli.py
 ├── scripts/             # CLI batch scripts

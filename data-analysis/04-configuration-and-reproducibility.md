@@ -167,7 +167,7 @@ run_config = {
         "apply_flopros": APPLY_FLOPROS,
     },
     "timestamp": datetime.now().isoformat(),
-    "notebook": "02_HazardOnly_Workflow.ipynb",
+    "notebook": "02_HazardModeling.ipynb",
 }
 
 config_path = HAZARD_OUTPUT / "run_config.json"

@@ -5,8 +5,9 @@
 ```
 my-analysis/
 ├── notebooks/               # Jupyter notebooks (numbered, sequential)
+│   ├── 00_ExploratoryDataAnalysis.ipynb
 │   ├── 01_Calibration.ipynb
-│   ├── 02_HazardWorkflow.ipynb
+│   ├── 02_HazardModeling.ipynb
 │   └── 03_ImpactModeling.ipynb
 ├── src/mypackage/           # Reusable Python code (importable)
 │   ├── __init__.py
@@ -33,7 +34,7 @@ my-analysis/
 
 ### 1. Numbered notebooks tell a story
 
-Notebooks should be numbered in execution order. A reader should be able to run `01 → 02 → 03` and reproduce the full analysis. If notebook B depends on output from notebook A, that dependency must be explicit (file path, not shared notebook state).
+Notebooks should be numbered in execution order. A reader should be able to run `00 → 01 → 02 → 03` and reproduce the full analysis. If notebook B depends on output from notebook A, that dependency must be explicit (file path, not shared notebook state).
 
 ### 2. `data/` is never committed to git
 
