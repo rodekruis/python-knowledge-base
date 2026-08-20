@@ -24,7 +24,7 @@ Best practices for building data pipelines that extract data from external sourc
 
 Best practices for building reproducible, well-structured **Jupyter notebook** workflows for data analysis, statistical calibration, and geospatial modeling. Covers notebook structure, conda environments, lazy data loading, memory management, visualization, code reuse, and more.
 
-### AI Use Disclaimer
+### AI Disclaimer
 
-Parts of this knowledge base - including the consolidated `copilot-instructions.md` files - were drafted with AI assistance and then reviewed and edited by 510 engineers. AI tools here are meant to **augment** engineers, not replace their judgment: a human reviews, understands, and owns all output. For the principles we follow, see the [Responsible AI guide](https://responsibleai.guide/), of which 510 is a collaborator.
+Parts of the code in this repository were written and reviewed with the assistance of AI tools, including large language models (LLMs). All AI-generated code has been reviewed by human contributors before being merged. The humans involved take responsibility for the correctness and quality of the code. If you have questions or concerns, please contact the maintainers.
 
