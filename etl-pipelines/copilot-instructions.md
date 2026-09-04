@@ -125,7 +125,7 @@ and an `ETLPipeline` class running `asyncio.gather`) is preferred. Use bronze/si
 - **Accumulate errors and continue** across routes; return `list[str]` (empty = success). Reserve
   exceptions for truly unexpected failures. **Fail fast** only on invalid config / missing required env /
   unestablishable connections.
-- Error messages follow `"{entity}: {what happened} {relevant values}"`. Never swallow exceptions silently
+- Error messages follow `"{route}: {what happened} {relevant values}"`. Never swallow exceptions silently
   (`except: pass`); catch specific exceptions and log. Never put secrets/PII in error messages.
 - Use exit codes: `0` success, `1` pipeline error, `2` config error (schedulers/CI/monitoring rely on these).
 
@@ -216,7 +216,7 @@ markers = ["integration: integration tests", "needs_secrets: needs API keys/cred
 - Loading data via shared global state
 - Sending output before integrity checks
 - `except: pass`
-- Aborting the whole run on one entity's failure
+- Aborting the whole run on one route's failure
 - Secrets/PII in logs or errors
 - Argparse spaghetti (use Click/tyro)
 - `print()` (use logging)

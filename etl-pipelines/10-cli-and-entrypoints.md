@@ -12,13 +12,13 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", required=True)
-parser.add_argument("--run-target", required=True)
+parser.add_argument("--environment", required=True)
 parser.add_argument("--scenario", required=False)
 parser.add_argument("--issued-at", required=False)
 args = parser.parse_args()
 
-if args.run_target not in ["debug", "test", "prod"]:
-    print("Invalid run target")
+if args.environment not in ["debug", "test", "prod"]:
+    print("Invalid environment")
     sys.exit(1)
 ```
 
@@ -26,7 +26,7 @@ if args.run_target not in ["debug", "test", "prod"]:
 
 ```python
 import click
-from my_pipeline.infra.config_reader import RunTarget
+from my_pipeline.infra.config_reader import Environment
 
 @click.command()
 @click.option(
@@ -36,10 +36,10 @@ from my_pipeline.infra.config_reader import RunTarget
     help="Path to YAML configuration file.",
 )
 @click.option(
-    "--run-target",
+    "--environment",
     required=True,
-    type=click.Choice([t.value for t in RunTarget], case_sensitive=False),
-    help="Which run target to execute.",
+    type=click.Choice([e.value for e in Environment], case_sensitive=False),
+    help="Which environment to execute.",
 )
 @click.option(
     "--scenario",
@@ -53,10 +53,10 @@ from my_pipeline.infra.config_reader import RunTarget
     type=click.DateTime(formats=["%Y-%m-%d"]),
     help="Override the pipeline run date (for backfills).",
 )
-def run_forecasts(config: Path, run_target: str, scenario: str | None, issued_at: datetime | None):
-    """Run the ETL pipeline for the given config and target."""
-    target = RunTarget(run_target)
-    orchestrator = Orchestrator(config, target, scenario=scenario, issued_at=issued_at)
+def run_forecasts(config: Path, environment: str, scenario: str | None, issued_at: datetime | None):
+    """Run the ETL pipeline for the given config and environment."""
+    env = Environment(environment)
+    orchestrator = Orchestrator(config, env, scenario=scenario, issued_at=issued_at)
     orchestrator.run()
 
 if __name__ == "__main__":
@@ -70,7 +70,7 @@ Every pipeline CLI should support at least:
 | Option | Purpose | Example |
 |--------|---------|---------|
 | `--config` | Pipeline config file | `configs/floods.yaml` |
-| `--run-target` | Environment tier | `debug`, `test`, `prod` |
+| `--environment` | Environment tier | `debug`, `test`, `prod` |
 | `--scenario` | Test scenario (bypass domain logic) | `alert`, `no-alert` |
 | `--issued-at` | Override run date | `2024-01-15` |
 | `--dry-run` | Validate config + extract, skip load | _(flag)_ |
@@ -79,8 +79,8 @@ Every pipeline CLI should support at least:
 
 ```python
 @click.option("--dry-run", is_flag=True, help="Validate and extract, but don't load.")
-def run_forecasts(config, run_target, scenario, issued_at, dry_run):
-    orchestrator = Orchestrator(config, target, scenario=scenario, issued_at=issued_at)
+def run_forecasts(config, environment, scenario, issued_at, dry_run):
+    orchestrator = Orchestrator(config, env, scenario=scenario, issued_at=issued_at)
     orchestrator.run(dry_run=dry_run)
 ```
 
@@ -97,7 +97,7 @@ run-pipeline = "my_pipeline.infra.run_forecasts:run_forecasts"
 After `uv sync`, users can run:
 
 ```bash
-uv run run-pipeline --config configs/floods.yaml --run-target debug
+uv run run-pipeline --config configs/floods.yaml --environment debug
 ```
 
 ## Debug Entrypoints in Modules
@@ -112,7 +112,7 @@ class ConfigReader:
 
 if __name__ == "__main__":
     reader = ConfigReader()
-    reader.load(Path("configs/floods.yaml"))
+    reader.read(Path("configs/floods.yaml"))
     print(reader.summary())
 ```
 
@@ -123,10 +123,10 @@ class DataProvider:
     ...
 
 if __name__ == "__main__":
-    # Quick smoke test: load config, fetch one data source
+    # Quick smoke test: read config, extract one data source
     reader = ConfigReader()
-    reader.load(Path("configs/floods.yaml"))
-    provider = DataProvider(api_client=ApiClient.from_env())
+    reader.read(Path("configs/floods.yaml"))
+    provider = DataProvider(client=ApiClient.from_env())
     provider.get_data(reader.countries[0].data_sources[:1])
     print("Loaded:", list(provider.loaded_data.keys()))
 ```
@@ -208,15 +208,15 @@ def cli():
 
 @cli.command()
 @click.option("--config", required=True, type=click.Path(exists=True, path_type=Path))
-@click.option("--run-target", required=True)
-def floods(config, run_target):
+@click.option("--environment", required=True)
+def floods(config, environment):
     """Run the flood forecasting pipeline."""
     ...
 
 @cli.command()
 @click.option("--config", required=True, type=click.Path(exists=True, path_type=Path))
-@click.option("--run-target", required=True)
-def drought(config, run_target):
+@click.option("--environment", required=True)
+def drought(config, environment):
     """Run the drought forecasting pipeline."""
     ...
 ```
@@ -227,8 +227,8 @@ pipeline = "my_pipeline.cli:cli"
 ```
 
 ```bash
-uv run pipeline floods --config configs/floods.yaml --run-target debug
-uv run pipeline drought --config configs/drought.yaml --run-target prod
+uv run pipeline floods --config configs/floods.yaml --environment debug
+uv run pipeline drought --config configs/drought.yaml --environment prod
 ```
 
 ## CLI Exit Codes
@@ -243,9 +243,9 @@ EXIT_PIPELINE_ERROR = 1  # Pipeline ran but produced errors
 EXIT_CONFIG_ERROR = 2    # Bad config, never started
 
 @click.command()
-def run_forecasts(config, run_target, scenario, issued_at):
+def run_forecasts(config, environment, scenario, issued_at):
     try:
-        orchestrator = Orchestrator(config, target, scenario=scenario, issued_at=issued_at)
+        orchestrator = Orchestrator(config, env, scenario=scenario, issued_at=issued_at)
         errors = orchestrator.run()
         if errors:
             logger.error("Pipeline completed with %d errors", len(errors))

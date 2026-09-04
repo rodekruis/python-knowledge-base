@@ -1,17 +1,17 @@
-# 05 — Extract (Data Fetching)
+# 05 — Extract
 
 ## One Function Per Data Source
 
-Each data source gets its own fetch function. This keeps fetch logic isolated, testable, and easy to understand:
+Each data source gets its own extract function. This keeps extract logic isolated, testable, and easy to understand:
 
 ```python
-# infra/utils/data_fetchers.py
+# infra/utils/extract.py
 
-def load_data_container(entity_config, source_config, container, api_client):
+def load_data_container(route_config, source_config, container, client):
     """Dispatch to the appropriate loader based on data source type."""
     match source_config.source:
         case DataSource.ADMIN_AREAS:
-            _load_admin_areas(container, api_client, source_config.entity_id)
+            _load_admin_areas(container, client, source_config.route_id)
         case DataSource.STATIONS:
             _load_stations(source_config, container)
         case DataSource.FORECAST:
@@ -20,17 +20,17 @@ def load_data_container(entity_config, source_config, container, api_client):
             raise ValueError(f"Unknown source: {source_config.source}")
 
 
-def _load_admin_areas(container, api_client, entity_id):
-    """Fetch admin areas from the API."""
+def _load_admin_areas(container, client, route_id):
+    """Extract admin areas from the API."""
     container.data_type = DataType.ADMIN_AREA_SET
-    data = api_client.get_admin_areas(entity_id)
+    data = client.get_admin_areas(route_id)
     container.data = AdminAreasSet.from_api(data)
 
 
 def _load_stations(source_config, container):
     """Load station data from the seed data repository."""
     container.data_type = DataType.LOCATION_POINTS
-    raw = download_json_source(f"{SEED_REPO_URI}/stations/{source_config.entity_id}.json")
+    raw = download_json_source(f"{SEED_REPO_URI}/stations/{source_config.route_id}.json")
     container.data = {s["id"]: LocationPoint.from_dict(s) for s in raw}
 ```
 
@@ -93,11 +93,11 @@ data = response.json()
 
 ## Parse at the Boundary
 
-Convert raw API/file data to typed dataclasses **immediately** after fetching:
+Convert raw API/file data to typed dataclasses **immediately** after extraction:
 
 ```python
-def _load_admin_areas(container, api_client, entity_id):
-    raw = api_client.get_admin_areas(entity_id)     # Returns raw dict/JSON
+def _load_admin_areas(container, client, route_id):
+    raw = client.get_admin_areas(route_id)           # Returns raw dict/JSON
     container.data = AdminAreasSet.from_api(raw)     # Parsed to dataclass HERE
     container.data_type = DataType.ADMIN_AREA_SET
 ```
@@ -105,7 +105,7 @@ def _load_admin_areas(container, api_client, entity_id):
 This means:
 - Parse errors surface at extract time, with the source context clear
 - Domain code only ever sees typed objects
-- You can unit-test parsing separately from fetching
+- You can unit-test parsing separately from extraction
 
 ## Paginated APIs
 

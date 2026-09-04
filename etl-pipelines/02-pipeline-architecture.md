@@ -10,7 +10,7 @@ Every pipeline follows the same high-level flow:
 │          │     │             │     │          │
 │ Fetch    │     │ Domain      │     │ Validate │
 │ data     │     │ logic       │     │ output   │
-│ sources  │     │ (compute,   │     │ Submit   │
+│ sources  │     │ (compute,   │     │ Load     │
 │          │     │  aggregate) │     │ to target│
 └──────────┘     └─────────────┘     └──────────┘
      ▲                                     │
@@ -20,7 +20,7 @@ Every pipeline follows the same high-level flow:
                │ What to     │
                │ fetch,      │
                │ where to    │
-               │ send        │
+               │ load        │
                └─────────────┘
 ```
 
@@ -30,27 +30,27 @@ There are two proven orchestration approaches at 510. Choose based on your pipel
 
 ### Approach A: Function-Based Orchestrator
 
-The orchestrator reads config, creates provider and submitter, and runs the pipeline per entity:
+The orchestrator reads config, creates provider and submitter, and runs the pipeline per route:
 
 ```python
 # infra/orchestrator.py
 
-def run_pipeline(config_path: str, run_target: str) -> list[str]:
+def run_pipeline(config_path: str, environment: str) -> list[str]:
     """Run the pipeline. Returns a list of error messages (empty = success)."""
     config = ConfigReader()
-    if not config.load(config_path):
-        return ["Failed to load config"]
+    if not config.read(config_path):
+        return ["Failed to read config"]
 
-    run_config = config.get_run_target(run_target)
+    run_config = config.get_environment(environment)
     transform_fn = TRANSFORM_FUNCTIONS[run_config.pipeline_type]
 
     all_errors: list[str] = []
-    for entity in run_config.entities:
-        provider = DataProvider(api_client)
-        provider.load_data(config, entity, run_target)
-        submitter = DataSubmitter(api_client)
-        transform_fn(provider, submitter, entity.id, entity.target_level)
-        all_errors.extend(submitter.send_all(entity.output_mode, entity.output_path))
+    for route in run_config.routes:
+        provider = DataProvider(client)
+        provider.load_data(config, route, environment)
+        submitter = DataSubmitter(client)
+        transform_fn(provider, submitter, route.id, route.target_level)
+        all_errors.extend(submitter.load_all(route.output_mode, route.output_path))
     return all_errors
 ```
 
@@ -128,15 +128,15 @@ The `DataProvider` abstracts all data sources behind a uniform interface:
 
 ```python
 class DataProvider:
-    def __init__(self, api_client: ApiClient):
+    def __init__(self, client: ApiClient):
         self.loaded_data: dict[DataSource, LoadedDataSource] = {}
 
-    def load_data(self, config, entity, run_target) -> bool:
-        """Load all data sources configured for this entity. Returns False if any critical source fails."""
-        for source_config in entity.data_sources:
+    def load_data(self, config, route, environment) -> bool:
+        """Load all data sources configured for this route. Returns False if any critical source fails."""
+        for source_config in route.data_sources:
             container = LoadedDataSource(data_source=source_config.source)
             try:
-                load_data_container(entity, source_config, container, self.api_client)
+                load_data_container(route, source_config, container, self.client)
             except Exception as exc:
                 container.error = str(exc)
                 logger.error(f"Failed to load {source_config.source}: {exc}")
@@ -156,19 +156,19 @@ class DataProvider:
 ### Adding a new data source
 
 1. Add an enum value to `DataSource`
-2. Write a fetch function in `data_fetchers.py`
+2. Write an extract function in `extract.py`
 3. Register it in the `load_data_container` dispatch (match/case or dict lookup)
 4. Add the source to the YAML config
 
-This pattern keeps fetch logic isolated per source and easy to test individually.
+This pattern keeps extract logic isolated per source and easy to test individually.
 
 ## DataSubmitter — The Load Layer
 
-The `DataSubmitter` is a builder that accumulates output, validates it, then sends it:
+The `DataSubmitter` is a builder that accumulates output, validates it, then loads it:
 
 ```python
 class DataSubmitter:
-    def __init__(self, api_client: ApiClient):
+    def __init__(self, client: ApiClient):
         self._results: list[Result] = {}
         self.errors: dict[str, str] = {}
 
@@ -176,27 +176,27 @@ class DataSubmitter:
         """Domain code calls this to build output incrementally."""
         ...
 
-    def send_all(self, output_mode: OutputMode, output_path: str) -> list[str]:
-        """Validate and send all accumulated results. Returns error list."""
-        # 1. Run integrity checks BEFORE sending
+    def load_all(self, output_mode: OutputMode, output_path: str) -> list[str]:
+        """Validate and load all accumulated results. Returns error list."""
+        # 1. Run integrity checks BEFORE loading
         errors = self._check_integrity()
         if errors:
             return errors
 
-        # 2. Send to target
+        # 2. Load to target
         match output_mode:
             case OutputMode.API:
-                return self._send_to_api()
+                return self._load_to_api()
             case OutputMode.LOCAL:
                 return self._write_to_file(output_path)
 ```
 
-### Why validate before sending?
+### Why validate before loading?
 
 Catching malformed output before it hits the target system:
 - Saves API calls and bandwidth
 - Produces clearer error messages (your integrity check vs a cryptic 400 response)
-- Prevents partial writes (either all results are valid, or none are sent)
+- Prevents partial writes (either all results are valid, or none are loaded)
 
 ## Scenario-Based Testing
 
@@ -204,7 +204,7 @@ Approach A introduces **scenarios** — synthetic overrides that replace domain 
 
 ```
 ┌────────────────────────────────┐
-│  run_target   ×   scenario     │
+│  environment  ×   scenario     │
 ├────────────────────────────────┤
 │  DEBUG        ×   (none)       │  → Real domain logic, debug data sources
 │  DEBUG        ×   no-alert     │  → Infra-only test: empty output

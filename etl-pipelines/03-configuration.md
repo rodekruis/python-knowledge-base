@@ -8,9 +8,9 @@ Use YAML files to define **what** a pipeline run does, keeping **how** in code. 
 # configs/floods.yaml
 pipeline_type: floods
 
-run_targets:
+environments:
   debug:
-    entities:
+    routes:
       - id: KEN
         target_level: 3
         data_sources:
@@ -21,7 +21,7 @@ run_targets:
           path: output/
 
   prod:
-    entities:
+    routes:
       - id: KEN
         target_level: 3
         data_sources:
@@ -40,21 +40,21 @@ run_targets:
           mode: api
 ```
 
-## Run Targets
+## Environments
 
-A run target is a named environment configuration. Use at minimum:
+An environment is a named run configuration. Use at minimum:
 
-| Run Target | Purpose | Data Sources | Output |
+| Environment | Purpose | Data Sources | Output |
 |-----------|---------|-------------|--------|
 | `debug` | Local development, quick iteration | Dummy/local data, minimal set | Local files |
 | `test` | CI/CD, integration tests | Real-ish data, limited scope | Local files or test API |
-| `prod` | Production | All real sources, all entities | Production API/database |
+| `prod` | Production | All real sources, all routes | Production API/database |
 
-### Why run targets matter
+### Why environments matter
 
 1. **No code changes between environments** — same code, different config
-2. **Fast local iteration** — `debug` target loads minimal data
-3. **Safe testing** — `test` target talks to staging, not production
+2. **Fast local iteration** — the `debug` environment loads minimal data
+3. **Safe testing** — the `test` environment talks to staging, not production
 4. **Explicit** — what runs where is documented in YAML, not scattered in env vars
 
 ## Config Reader with Validation
@@ -64,10 +64,10 @@ Parse and validate config at startup. Fail fast with clear error messages:
 ```python
 class ConfigReader:
     def __init__(self):
-        self.run_targets: dict[RunTarget, PipelineRunConfig] = {}
+        self.environments: dict[Environment, PipelineRunConfig] = {}
 
-    def load(self, path: Path) -> bool:
-        """Load and validate config. Returns False on any validation error."""
+    def read(self, path: Path) -> bool:
+        """Read and validate config. Returns False on any validation error."""
         try:
             with open(path, "r", encoding="utf-8") as f:
                 raw = yaml.safe_load(f)
@@ -82,8 +82,8 @@ class ConfigReader:
             logger.error(f"Invalid pipeline_type, expected one of {[e.value for e in PipelineType]}")
             return False
 
-        # Validate each run target and entity
-        return self._parse_run_targets(raw, pipeline_type)
+        # Validate each environment and route
+        return self._parse_environments(raw, pipeline_type)
 ```
 
 ### Validate against enums
@@ -101,7 +101,7 @@ class OutputMode(StrEnum):
     LOCAL = "local"
     API = "api"
 
-class RunTarget(StrEnum):
+class Environment(StrEnum):
     DEBUG = "debug"
     TEST = "test"
     PROD = "prod"
@@ -118,13 +118,13 @@ Use env vars for **secrets and host-specific values** only. Everything else goes
 
 | In YAML | In env vars |
 |---------|-------------|
-| Which entities to process | `API_KEY` |
+| Which routes to process | `API_KEY` |
 | Which data sources to load | `API_HOST` |
 | Output mode (local/api) | `DB_PASSWORD` |
 | Target granularity level | `APPLICATIONINSIGHTS_CONNECTION_STRING` |
 
 ```python
-# infra/utils/api_client.py
+# infra/utils/client_ibf.py
 class ApiClient:
     def __init__(self):
         self.base_url = os.environ.get("API_HOST", "http://localhost:3000")
@@ -153,12 +153,12 @@ Represent parsed config as frozen dataclasses, not dicts:
 ```python
 @dataclass
 class DataSourceConfig:
-    entity_id: str
+    route_id: str
     source: DataSource
 
 @dataclass
-class EntityRunConfig:
-    entity_id: str
+class RouteRunConfig:
+    route_id: str
     target_level: int
     data_sources: list[DataSourceConfig]
     output_mode: OutputMode
@@ -166,19 +166,19 @@ class EntityRunConfig:
 
 @dataclass
 class PipelineRunConfig:
-    run_target: RunTarget
+    environment: Environment
     pipeline_type: PipelineType
-    entities: dict[str, EntityRunConfig]
+    routes: dict[str, RouteRunConfig]
 ```
 
 ❌ Bad — accessing raw dicts throughout the codebase:
 ```python
-country = config["run_targets"]["debug"]["countries"][0]["iso_3_code"]
+country = config["environments"]["debug"]["countries"][0]["iso_3_code"]
 ```
 
 ✅ Good — typed, validated config objects:
 ```python
-country = run_config.entities["KEN"].entity_id
+country = run_config.routes["KEN"].route_id
 ```
 
 ## CLI Override of Config Values
@@ -188,10 +188,10 @@ Allow CLI flags to override config values for flexibility:
 ```python
 @click.command()
 @click.option("--config", required=True, type=click.Path(exists=True))
-@click.option("--run-target", required=True)
+@click.option("--environment", required=True)
 @click.option("--scenario", default=None, help="Override: no-alert or alert")
 @click.option("--output-mode", default=None, help="Override output mode")
-def main(config, run_target, scenario, output_mode):
+def main(config, environment, scenario, output_mode):
     ...
 ```
 
@@ -199,7 +199,7 @@ The precedence should be: **CLI flags > environment variables > YAML config > de
 
 ## Alternative: Country Config via Protocol + Dataclass
 
-For pipelines where every entity (country) has complex, domain-specific configuration, define a `Protocol` contract and implement it per country using `@dataclass`:
+For pipelines where every route (country) has complex, domain-specific configuration, define a `Protocol` contract and implement it per country using `@dataclass`:
 
 ```python
 # config/base.py
@@ -269,5 +269,5 @@ class DroughtTrendConfig(TypedDict):
 | Operators change config | ✅ YAML is accessible | ❌ Requires Python knowledge |
 | Complex derived config | ❌ Limited expressiveness | ✅ Properties, calculations, list comprehensions |
 | Type safety | Validated at load time | Validated at definition time (mypy/pyright) |
-| Number of entities | Few (2-5 countries) | Many, each with unique parameters |
+| Number of routes | Few (2-5 countries) | Many, each with unique parameters |
 | Config per component | All in one YAML file | Each component defines its own `TypedDict` |

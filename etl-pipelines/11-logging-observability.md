@@ -99,8 +99,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @click.command()
-def run_forecasts(config, run_target, scenario, issued_at):
-    logger.info("Pipeline started", extra={"run_target": run_target})
+def run_forecasts(config, environment, scenario, issued_at):
+    logger.info("Pipeline started", extra={"environment": environment})
     ...
 ```
 
@@ -117,7 +117,7 @@ logger = logging.getLogger(__name__)
 class DataProvider:
     def get_data(self, data_sources):
         for source in data_sources:
-            logger.info("Fetching data source: %s", source.value)
+            logger.info("Extracting data source: %s", source.value)
             ...
 ```
 
@@ -133,7 +133,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 | Phase | Log What | Level |
 |-------|---------|-------|
-| Startup | Config file, run target, pipeline type, issued_at | `INFO` |
+| Startup | Config file, environment, pipeline type, issued_at | `INFO` |
 | Extract | Data source name, record count, duration | `INFO` |
 | Transform | Input/output shape, skipped records | `INFO` |
 | Load | Destination, record count, status code | `INFO` |
@@ -144,13 +144,13 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 ### ❌ Bad: log the data
 
 ```python
-logger.info("Fetched data: %s", json.dumps(data))  # Could be 100 MB
+logger.info("Extracted data: %s", json.dumps(data))  # Could be 100 MB
 ```
 
 ### ✅ Good: log metadata about the data
 
 ```python
-logger.info("Fetched %d records from %s in %.2fs", len(data), source.value, elapsed)
+logger.info("Extracted %d records from %s in %.2fs", len(data), source.value, elapsed)
 ```
 
 ## Run Traceability
@@ -161,7 +161,7 @@ Every pipeline run should be traceable. Include a run ID in all log output:
 import uuid
 
 @click.command()
-def run_forecasts(config, run_target, scenario, issued_at):
+def run_forecasts(config, environment, scenario, issued_at):
     run_id = uuid.uuid4().hex[:8]
     logging.basicConfig(
         level=logging.INFO,
@@ -198,7 +198,7 @@ class Timer:
 
 # Usage
 with Timer("Extract admin areas"):
-    admin_areas = provider.fetch_admin_areas(country)
+    admin_areas = provider.extract_admin_areas(country)
 
 with Timer("Transform flood forecasts"):
     alerts = transform_floods(data)
@@ -296,8 +296,8 @@ See [../shared/logging.md](../shared/logging.md#log-levels) for the universal lo
 | Level | Pipeline use | Example |
 |-------|-------------|---------|
 | `DEBUG` | Raw API responses, intermediate data shapes | `"API response: %s"` |
-| `INFO` | Normal progress: loaded, transformed, submitted | `"Loaded 1523 records from GloFAS"` |
+| `INFO` | Normal progress: extracted, transformed, loaded | `"Loaded 1523 records from GloFAS"` |
 | `WARNING` | Recoverable: skipped record, fallback used | `"Station XYZ missing from thresholds, skipping"` |
-| `ERROR` | Output affected: submission failed for one entity | `"Failed to submit data for KEN"` |
+| `ERROR` | Output affected: load failed for one route | `"Failed to load data for KEN"` |
 | `CRITICAL` | Pipeline cannot continue at all | `"Config file not found, aborting"` |
 

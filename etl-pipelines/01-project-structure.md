@@ -2,7 +2,7 @@
 
 ## Recommended Layout
 
-The key structural insight from our reference pipelines is the **infra/domain split**: infrastructure code (config parsing, data fetching, output submission) is separated from domain logic (the actual transformation/computation). This pattern scales well and is our recommended default.
+The key structural insight from our reference pipelines is the **infra/domain split**: infrastructure code (config parsing, data extraction, output loading) is separated from domain logic (the actual transformation/computation). This pattern scales well and is our recommended default.
 
 There are two proven layouts at 510:
 
@@ -21,13 +21,13 @@ my-pipeline/
 │   │   ├── data_provider.py          # Abstraction over all data sources
 │   │   ├── data_submitter.py         # Abstraction over output targets
 │   │   ├── data_types/               # Shared typed dataclasses and enums
-│   │   │   ├── config_types.py       # RunTarget, DataSource, OutputMode enums + config dataclasses
+│   │   │   ├── config_types.py       # Environment, DataSource, OutputMode enums + config dataclasses
 │   │   │   ├── domain_types.py       # Domain-specific data structures
 │   │   │   └── output_types.py       # Output payload dataclasses
 │   │   ├── utils/                    # Helpers: API clients, file loaders, integrity checks
-│   │   │   ├── api_client.py
-│   │   │   ├── data_fetchers.py      # Per-source fetch functions
-│   │   │   └── integrity_checks.py   # Output validation before submission
+│   │   │   ├── client_<system>.py    # One client module per external system
+│   │   │   ├── extract.py            # Per-source extract functions
+│   │   │   └── integrity_checks.py   # Output validation before loading
 │   │   └── configs/                  # YAML config files per pipeline variant
 │   │       ├── floods.yaml
 │   │       └── drought.yaml
@@ -132,7 +132,7 @@ Domain logic receives two objects and a context:
 def calculate_forecasts(
     data_provider: DataProvider,    # Read-only access to all loaded data sources
     data_submitter: DataSubmitter,  # Write-only interface to build output
-    country: str,                   # Context: which entity to process
+    country: str,                   # Context: which route to process
     target_level: int,              # Context: at what granularity
 ) -> None:
     # 1. Get data from provider
@@ -205,8 +205,8 @@ def format_email(): ...
 
 ✅ Good — specific, purposeful modules:
 ```python
-# infra/utils/data_fetchers.py    — one function per data source
-# infra/utils/api_client.py       — API interaction
+# infra/utils/extract.py          — one function per data source
+# infra/utils/client_ibf.py       — API interaction, one module per external system
 # infra/utils/integrity_checks.py — output validation
 # flood/return_periods.py          — domain-specific computation
 ```

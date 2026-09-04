@@ -2,19 +2,19 @@
 
 ## Error Strategy: Accumulate, Don't Abort
 
-Pipelines that process multiple entities should **collect errors and continue**, not fail on the first problem. One entity's failure shouldn't block the others:
+Pipelines that process multiple routes should **collect errors and continue**, not fail on the first problem. One route's failure shouldn't block the others:
 
 ```python
-def run_pipeline(config_path, run_target) -> list[str]:
+def run_pipeline(config_path, environment) -> list[str]:
     all_errors: list[str] = []
 
-    for entity in entities:
+    for route in routes:
         try:
-            errors = _run_entity(entity, ...)
+            errors = _run_route(route, ...)
             all_errors.extend(errors)
         except Exception as exc:
-            logger.exception(f"Unexpected error for {entity.id}")
-            all_errors.append(f"{entity.id}: {exc}")
+            logger.exception(f"Unexpected error for {route.id}")
+            all_errors.append(f"{route.id}: {exc}")
 
     return all_errors  # Empty list = success
 ```
@@ -25,26 +25,26 @@ def run_pipeline(config_path, run_target) -> list[str]:
 |------------------------------|--------------------------------------|
 | Config file is invalid | One of 5 countries fails to load data |
 | Required environment variable is missing | One data source returns empty results |
-| Transform function registration fails | One entity's output fails integrity checks |
-| Database connection cannot be established | API submission fails for one entity |
+| Transform function registration fails | One route's output fails integrity checks |
+| Database connection cannot be established | API load fails for one route |
 
 ## Error Return Pattern
 
 Approach A uses a clean pattern: functions return `list[str]` where an empty list means success:
 
 ```python
-def _run_entity(entity, ...) -> list[str]:
-    """Process one entity. Returns list of error messages."""
+def _run_route(route, ...) -> list[str]:
+    """Process one route. Returns list of error messages."""
     # Extract
-    if not provider.load_data(entity):
-        return [f"Failed to load data for {entity.id}"]
+    if not provider.load_data(route):
+        return [f"Failed to load data for {route.id}"]
 
     # Transform
-    submitter = DataSubmitter(api_client)
-    transform_fn(provider, submitter, entity.id, entity.level)
+    submitter = DataSubmitter(client)
+    transform_fn(provider, submitter, route.id, route.level)
 
     # Load
-    return submitter.send_all(entity.output_mode, entity.output_path)
+    return submitter.load_all(route.output_mode, route.output_path)
 ```
 
 This is simpler than exceptions for expected pipeline failures (missing data, validation errors). Reserve exceptions for truly unexpected situations (bugs, infra failures).
@@ -62,12 +62,12 @@ return ["Something went wrong"]
 
 ✅ Good:
 ```python
-return [f"Entity '{entity_id}': no station data available for source '{source}'"]
-return [f"Entity '{entity_id}': API returned {status_code}: {response_text[:200]}"]
-return [f"Entity '{entity_id}': centroid latitude {lat} is outside [-90, 90]"]
+return [f"Route '{route_id}': no station data available for source '{source}'"]
+return [f"Route '{route_id}': API returned {status_code}: {response_text[:200]}"]
+return [f"Route '{route_id}': centroid latitude {lat} is outside [-90, 90]"]
 ```
 
-Pattern: **`{entity}: {what happened} {relevant values}`**
+Pattern: **`{route}: {what happened} {relevant values}`**
 
 ## DataSubmitter Error Accumulation
 
@@ -82,7 +82,7 @@ class DataSubmitter:
         """Called by domain code when transform encounters a problem."""
         self.errors[f"domain:{len(self.errors)}"] = error
 
-    def send_all(self, output_mode, output_path) -> list[str]:
+    def load_all(self, output_mode, output_path) -> list[str]:
         # Check domain errors first
         if self.errors:
             return list(self.errors.values())
@@ -92,7 +92,7 @@ class DataSubmitter:
         if integrity_errors:
             return integrity_errors
 
-        # All clean — send
+        # All clean — load
         return self._dispatch_output(output_mode, output_path)
 ```
 
@@ -102,8 +102,8 @@ The CLI entry point should translate errors to exit codes:
 
 ```python
 @click.command()
-def main(config_path, run_target, ...):
-    errors = run_pipeline(config_path, run_target)
+def main(config_path, environment, ...):
+    errors = run_pipeline(config_path, environment)
 
     if errors:
         logger.error(f"Pipeline completed with {len(errors)} error(s):")
@@ -139,7 +139,7 @@ try:
     response.raise_for_status()
     data = response.json()
 except requests.RequestException as exc:
-    logger.error(f"Failed to fetch {url}: {exc}")
+    logger.error(f"Failed to extract {url}: {exc}")
     container.error = str(exc)
     return
 ```
@@ -151,26 +151,26 @@ Keep each `try/except` focused on a single operation. When one block contains mu
 ❌ Bad:
 ```python
 try:
-    raw_data = extract(entity)
+    raw_data = extract(route)
     transformed = transform(raw_data)
     load(transformed)
 except Exception as exc:
-    logger.error(f"Entity '{entity.id}' failed: {exc}")
+    logger.error(f"Route '{route.id}' failed: {exc}")
 ```
 
 ✅ Good:
 ```python
 try:
-    raw_data = extract(entity)
+    raw_data = extract(route)
 except Exception as exc:
-    return [f"Entity '{entity.id}': extract failed: {exc}"]
+    return [f"Route '{route.id}': extract failed: {exc}"]
 
 try:
     transformed = transform(raw_data)
 except Exception as exc:
-    return [f"Entity '{entity.id}': transform failed: {exc}"]
+    return [f"Route '{route.id}': transform failed: {exc}"]
 
-return load_with_error_collection(entity, transformed)
+return load_with_error_collection(route, transformed)
 ```
 
 This improves observability, makes retries safer, and keeps error ownership clear per pipeline stage.

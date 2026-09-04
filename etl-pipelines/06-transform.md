@@ -8,11 +8,11 @@ The transform function is where data scientists write domain logic. It should be
 def calculate_flood_forecasts(
     data_provider: DataProvider,
     data_submitter: DataSubmitter,
-    entity_id: str,
+    route_id: str,
     target_level: int,
 ) -> None:
     """
-    Compute flood forecasts for a given entity.
+    Compute flood forecasts for a given route.
 
     Reads input data from data_provider, writes output via data_submitter.
     Does NOT make HTTP calls, read env vars, or access the file system directly.
@@ -70,7 +70,7 @@ def compute_exceedance_probability(
 Always check that data loaded before proceeding. Fail with a clear message:
 
 ```python
-def calculate_forecasts(data_provider, data_submitter, entity_id, target_level):
+def calculate_forecasts(data_provider, data_submitter, route_id, target_level):
     stations = data_provider.get_data(DataSource.STATIONS, dict)
     admin_areas = data_provider.get_data(DataSource.ADMIN_AREAS, AdminAreasSet)
 
@@ -97,7 +97,7 @@ Strategies:
 ```python
 # Output path includes timestamp for idempotency
 timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-output_path = f"output/{pipeline_type}/{entity_id}/{timestamp}"
+output_path = f"output/{pipeline_type}/{route_id}/{timestamp}"
 ```
 
 ## Avoid Side Effects
@@ -146,13 +146,13 @@ class ProcessedStation:
 Log at meaningful checkpoints, not every line:
 
 ```python
-def calculate_forecasts(data_provider, data_submitter, entity_id, target_level):
+def calculate_forecasts(data_provider, data_submitter, route_id, target_level):
     stations = data_provider.get_data(DataSource.STATIONS, dict)
-    logger.info(f"Loaded {len(stations)} stations for {entity_id}")
+    logger.info(f"Loaded {len(stations)} stations for {route_id}")
 
     # ... computation ...
 
-    logger.info(f"Generated {len(alerts)} alerts for {entity_id}")
+    logger.info(f"Generated {len(alerts)} alerts for {route_id}")
     for alert in alerts:
         data_submitter.create_alert(...)
 ```

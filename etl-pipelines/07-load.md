@@ -14,8 +14,8 @@ class OutputMode(StrEnum):
 The `DataSubmitter` dispatches based on mode:
 
 ```python
-def send_all(self, output_mode: OutputMode, output_path: str) -> list[str]:
-    # 1. Validate BEFORE sending
+def load_all(self, output_mode: OutputMode, output_path: str) -> list[str]:
+    # 1. Validate BEFORE loading
     errors = self._check_integrity()
     if errors:
         logger.error(f"Integrity check failed: {errors}")
@@ -26,12 +26,12 @@ def send_all(self, output_mode: OutputMode, output_path: str) -> list[str]:
         case OutputMode.LOCAL:
             return self._write_to_file(output_path)
         case OutputMode.API:
-            return self._send_to_api()
+            return self._load_to_api()
 ```
 
-## Validate Before Sending
+## Validate Before Loading
 
-**Always** run integrity checks before submitting to the target:
+**Always** run integrity checks before loading to the target:
 
 ```python
 def _check_integrity(self) -> list[str]:
@@ -58,7 +58,7 @@ def _check_integrity(self) -> list[str]:
 | Without pre-validation | With pre-validation |
 |----------------------|-------------------|
 | API returns `422 Unprocessable Entity` | Clear message: "latitude 91.3 out of range" |
-| Partial writes (some results sent, some rejected) | All-or-nothing: either everything is valid, or nothing is sent |
+| Partial writes (some results sent, some rejected) | All-or-nothing: either everything is valid, or nothing is loaded |
 | Error message from remote system, often cryptic | Error message from your code, with full context |
 | One round-trip per validation error | All errors caught locally in one pass |
 
@@ -100,20 +100,20 @@ output/
 For production, POST results to the target API:
 
 ```python
-def _send_to_api(self) -> list[str]:
+def _load_to_api(self) -> list[str]:
     payload = self._build_payload()
 
     try:
-        response = self.api_client.post_results(payload)
+        response = self.client.post_results(payload)
         if response.status_code not in range(200, 300):
             return [f"API returned {response.status_code}: {response.text}"]
-        logger.info("Successfully submitted results to API")
+        logger.info("Successfully loaded results to API")
         return []
     except requests.RequestException as exc:
-        return [f"API submission failed: {exc}"]
+        return [f"API load failed: {exc}"]
 ```
 
-### API submission best practices
+### API load best practices
 
 1. **Single payload** — batch all results into one request when the API supports it, rather than one request per result
 2. **Idempotent endpoints** — prefer PUT/PATCH with natural keys over POST that creates duplicates
@@ -143,7 +143,7 @@ def _write_atomic(self, output_dir: str, payload: dict) -> None:
 
 ### API output
 - Use transaction endpoints if available
-- If the API doesn't support transactions, validate thoroughly before sending to minimize partial failure risk
+- If the API doesn't support transactions, validate thoroughly before loading to minimize partial failure risk
 
 ## Output Schema Documentation
 

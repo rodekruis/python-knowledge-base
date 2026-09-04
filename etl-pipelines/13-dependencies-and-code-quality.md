@@ -181,10 +181,10 @@ Use type annotations everywhere. They're documentation that the type checker val
 ### ❌ Bad: no annotations
 
 ```python
-def get_data(sources, api_client):
+def get_data(sources, client):
     results = {}
     for source in sources:
-        data = api_client.fetch(source)
+        data = client.extract(source)
         results[source] = data
     return results
 ```
@@ -194,11 +194,11 @@ def get_data(sources, api_client):
 ```python
 def get_data(
     sources: list[DataSource],
-    api_client: ApiClient,
+    client: ApiClient,
 ) -> dict[DataSource, LoadedDataSource]:
     results: dict[DataSource, LoadedDataSource] = {}
     for source in sources:
-        data = api_client.fetch(source)
+        data = client.extract(source)
         results[source] = LoadedDataSource(data_source=source, data=data)
     return results
 ```

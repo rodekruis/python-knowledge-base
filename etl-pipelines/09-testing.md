@@ -47,11 +47,11 @@ def test_centroid_out_of_range():
 ### Config reader
 
 ```python
-def test_config_loads_valid_yaml(tmp_path):
+def test_config_reads_valid_yaml(tmp_path):
     config_file = tmp_path / "test.yaml"
     config_file.write_text("""
 pipeline_type: floods
-run_targets:
+environments:
   debug:
     countries:
       - iso_3_code: KEN
@@ -63,14 +63,14 @@ run_targets:
           path: output/
 """)
     reader = ConfigReader()
-    assert reader.load(config_file) is True
-    assert RunTarget.DEBUG in reader.run_targets
+    assert reader.read(config_file) is True
+    assert Environment.DEBUG in reader.environments
 
 def test_config_rejects_invalid_pipeline_type(tmp_path):
     config_file = tmp_path / "bad.yaml"
-    config_file.write_text("pipeline_type: invalid\nrun_targets: {}")
+    config_file.write_text("pipeline_type: invalid\nenvironments: {}")
     reader = ConfigReader()
-    assert reader.load(config_file) is False
+    assert reader.read(config_file) is False
 ```
 
 ### Domain logic
@@ -112,10 +112,10 @@ def pipeline() -> PipelineHelpers:
         clean_output=_clean_output,
     )
 
-def _run_pipeline(config, run_target, *, scenario=None, extra_env=None):
+def _run_pipeline(config, environment, *, scenario=None, extra_env=None):
     """Run the pipeline as a subprocess."""
     cmd = [sys.executable, "-m", "my_pipeline.infra.orchestrator",
-           "--config", config, "--run-target", run_target]
+           "--config", config, "--environment", environment]
     if scenario:
         cmd.extend(["--scenario", scenario])
 
@@ -154,8 +154,8 @@ def test_pipeline_alert_scenario(pipeline):
 
 | Scenario | Domain logic runs? | Tests |
 |----------|-------------------|-------|
-| `no-alert` | ❌ Bypassed | Config parsing, data loading, empty output submission |
-| `alert` | ❌ Bypassed | Config parsing, data loading, synthetic output, integrity checks, submission |
+| `no-alert` | ❌ Bypassed | Config parsing, data loading, empty output load |
+| `alert` | ❌ Bypassed | Config parsing, data loading, synthetic output, integrity checks, load |
 | _(none)_ | ✅ Full run | Everything including domain computation |
 
 ## Mocking External APIs
@@ -199,7 +199,7 @@ def sample_admin_areas():
 @pytest.fixture
 def sample_data_provider(sample_admin_areas):
     """DataProvider pre-loaded with test data."""
-    provider = DataProvider(api_client=MagicMock())
+    provider = DataProvider(client=MagicMock())
     provider.loaded_data[DataSource.ADMIN_AREAS] = LoadedDataSource(
         data_type=DataType.ADMIN_AREA_SET,
         data_source=DataSource.ADMIN_AREAS,

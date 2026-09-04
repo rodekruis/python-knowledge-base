@@ -2,7 +2,7 @@
 
 > **Shared foundation:** See [../shared/docker.md](../shared/docker.md) for universal Dockerfile principles (layer ordering, `--no-dev --frozen`, .dockerignore, health checks) and [../shared/ci-cd.md](../shared/ci-cd.md) for the standard lint-and-test workflow, action versions, and OIDC authentication.
 
-This document covers **pipeline-specific** deployment: container entry points, scheduling options (cron, ACI, Azure Functions), environment separation via run targets, and CI/CD for the pipeline's own code.
+This document covers **pipeline-specific** deployment: container entry points, scheduling options (cron, ACI, Azure Functions), environment separation via the `--environment` option, and CI/CD for the pipeline's own code.
 
 ---
 
@@ -69,7 +69,7 @@ See [../shared/docker.md](../shared/docker.md) for the full rationale. Pipeline-
 
 | Principle | Pipeline implication |
 |-----------|---------------------|
-| `ENTRYPOINT` with CLI | Container *is* the pipeline — `docker run my-pipeline --config ... --run-target prod` |
+| `ENTRYPOINT` with CLI | Container *is* the pipeline — `docker run my-pipeline --config ... --environment prod` |
 | `--no-dev --frozen` | Reproducible builds; no test/lint deps in production |
 | Install deps before copying code | Docker layer caching — deps don't change often |
 | Include `configs/` | Pipeline YAML configs are part of the image |
@@ -81,10 +81,10 @@ See [../shared/docker.md](../shared/docker.md) for the full rationale. Pipeline-
 docker build -t my-pipeline .
 
 # Run with config
-docker run --env-file .env my-pipeline --config configs/floods.yaml --run-target prod
+docker run --env-file .env my-pipeline --config configs/floods.yaml --environment prod
 
 # Run a specific scenario (testing)
-docker run my-pipeline --config configs/floods.yaml --run-target debug --scenario alert
+docker run my-pipeline --config configs/floods.yaml --environment debug --scenario alert
 ```
 
 ## .dockerignore
@@ -127,7 +127,7 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
-        run: uv run run-pipeline --config configs/floods.yaml --run-target prod
+        run: uv run run-pipeline --config configs/floods.yaml --environment prod
 ```
 
 **Advantages**: No infrastructure to manage, secrets built in, logs in GitHub.
@@ -145,7 +145,7 @@ az container create \
   --restart-policy Never \
   --environment-variables API_URL=$API_URL \
   --secure-environment-variables API_TOKEN=$API_TOKEN \
-  --command-line "uv run run-pipeline --config configs/floods.yaml --run-target prod"
+  --command-line "uv run run-pipeline --config configs/floods.yaml --environment prod"
 ```
 
 Trigger on schedule with Azure Logic Apps or a simple cron-based Azure Function.
@@ -169,7 +169,7 @@ app = func.FunctionApp()
 def run_pipeline(timer: func.TimerRequest):
     """Trigger pipeline daily at 06:00 UTC."""
     result = subprocess.run(
-        ["uv", "run", "run-pipeline", "--config", "configs/floods.yaml", "--run-target", "prod"],
+        ["uv", "run", "run-pipeline", "--config", "configs/floods.yaml", "--environment", "prod"],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -182,7 +182,7 @@ Simplest, but you own the infrastructure:
 
 ```cron
 # /etc/cron.d/pipeline
-0 6 * * * appuser cd /opt/pipeline && docker compose run --rm pipeline --config configs/floods.yaml --run-target prod >> /var/log/pipeline.log 2>&1
+0 6 * * * appuser cd /opt/pipeline && docker compose run --rm pipeline --config configs/floods.yaml --environment prod >> /var/log/pipeline.log 2>&1
 ```
 
 ### Comparison
@@ -249,9 +249,9 @@ jobs:
 
 ## Environment Separation
 
-Use run targets to separate environments cleanly:
+Use environments to separate deployments cleanly:
 
-| Run Target | Config | Output Mode | API Endpoint | Scheduling |
+| Environment | Config | Output Mode | API Endpoint | Scheduling |
 |-----------|--------|------------|-------------|------------|
 | `debug` | `configs/floods.yaml` | `local` (files) | N/A | Manual |
 | `test` | `configs/floods.yaml` | `api` | Staging API | On PR merge |
@@ -259,12 +259,12 @@ Use run targets to separate environments cleanly:
 
 ```bash
 # Development
-uv run run-pipeline --config configs/floods.yaml --run-target debug
+uv run run-pipeline --config configs/floods.yaml --environment debug
 
 # Staging (in CI after merge)
-uv run run-pipeline --config configs/floods.yaml --run-target test
+uv run run-pipeline --config configs/floods.yaml --environment test
 
 # Production (scheduled)
-uv run run-pipeline --config configs/floods.yaml --run-target prod
+uv run run-pipeline --config configs/floods.yaml --environment prod
 ```
 
